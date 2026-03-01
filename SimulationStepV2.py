@@ -11,7 +11,7 @@ from matplotlib.animation import FuncAnimation
 def gridAssign(x,box,N):
 
     #Assign gridLength
-    gridLength = 0.5
+    gridLength = 5
 
     #Get number of grid rows and columns
     rows = int(box[1][0] / gridLength)
@@ -38,7 +38,7 @@ def gridAssign(x,box,N):
             gridPosCol -= 1
         gridArray.append([gridPosRow,gridPosCol])
 
-    return gridArray,rows,cols
+    return gridArray,gridLength
 
 def connect(gridArray,N):
     #Network of particle connections
@@ -53,13 +53,10 @@ def connect(gridArray,N):
         partNet.append(currNet)
     return partNet
 
-def forceWall(Forces,x,gridArray,part,N,rows,cols):
-    #Index from 0 fix
-    rows=rows-1
-    cols=cols-1
+def forceWall(Forces,x,gridLength,part,N):
     #Check collision with wall
     for particle in range(N):
-        if gridArray[particle][0] == 0 or gridArray[particle][0] == cols or gridArray[particle][1] == 0 or gridArray[particle][1] == rows:
+        if x[0][particle] <= gridLength or x[0][particle] >= upp[0] - gridLength or x[1][particle] <= gridLength or x[1][particle] >= upp[1] - gridLength:
             #Particle A 
             A = np.array([x[0][particle],x[1][particle]])
 
@@ -110,11 +107,11 @@ def SimulationStep(x, v, h, part, box, g,N):
     #Set up forces array
     Forces = np.zeros((2,N))
 
-    gridArray,rows,cols = gridAssign(x,box,N)
+    gridArray,gridLength = gridAssign(x,box,N)
 
     partNet = connect(gridArray,N)
 
-    Forces = forceWall(Forces,x,gridArray,part,N,rows,cols)
+    Forces = forceWall(Forces,x,gridLength,part,N)
 
     Forces = forceParticle(Forces,x,partNet,part)
 
@@ -123,16 +120,9 @@ def SimulationStep(x, v, h, part, box, g,N):
 
     return xnew, vnew
 
-def update(frame):
-    # print(frame)
-    # print(state[frame][0][0])
-    # exit()
-    points.set_xdata(state[frame][0][0])
-    points.set_ydata(state[frame][0][1])
-    return points,
 
 #Number of Particles
-p=5
+p=1
 N = 4**p
 
 #Particle Constant Radius and Elasticity
@@ -144,7 +134,7 @@ part = {
 
 #Timestep
 tini = 0
-tend=50
+tend=100
 h = 0.01
 loops = tend/h
 
@@ -187,9 +177,11 @@ ax.set_xlim(0,upp[0])
 ax.set_ylim(0,upp[0])
 
 for i in range(int(loops)):
+    # box = np.vstack([low,upp-[0,i]])
+
     x , v = SimulationStep(x, v, h, part, box, g,N)
 
-    if i%1==0:
+    if i%10==0:
         data = np.stack([x[0],x[1]]).T
         scatter.set_offsets(data)
         plt.pause(0.001)
