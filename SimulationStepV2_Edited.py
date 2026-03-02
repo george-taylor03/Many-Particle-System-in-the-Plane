@@ -4,7 +4,6 @@ import numpy as np
 from math import *
 rand = np.random.rand
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 
 
 def gridBuilder(x,box,N):
@@ -19,7 +18,7 @@ def gridBuilder(x,box,N):
     #Zero matrix representing grid positions
     gridArray = []
 
-    # build more effective grid assignment build on gridarrys assignments using python dictionarys 
+    # build more effective grid assignment build on gridarrys assignments using python dictionary's 
     grid = {} # empty dict to be appended
 
     #Assign Grids
@@ -47,7 +46,7 @@ def gridBuilder(x,box,N):
         # if not add a new box 
         else:
             grid[gridPosRow,gridPosCol] = [particle]
-    # this sorts much faster as it uses the very efficent dictionarys lookups
+    # this sorts much faster as it uses the very efficient dictionary's lookups
 
     return grid,gridArray,gridLength
         
@@ -56,11 +55,11 @@ def connect(grid, gridArray,N):
     # create a empty list for each particle to store its nearby particles 
     # just a list of list [[],[],[],[],[]] <- like this
     partnet = [[] for j in range(N)]
-    # split our grid array values to into two seperate pairs instead of tuples for our dict
+    # split our grid array values to into two separate pairs instead of tuples for our dict
     for i in range(N):
         xco = gridArray[i][0]
         yco = gridArray[i][1]
-        # checks the surrounding 3X3 boxes arround this particles 
+        # checks the surrounding 3X3 boxes around this particles 
         # better that nested if loops as for loops are faster 
         for dxco in (-1,0,1):
             for dyco in (-1,0,1):
