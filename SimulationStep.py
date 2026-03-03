@@ -16,7 +16,7 @@ def gridBuilder(x,box,N):
     #Zero matrix representing grid positions
     gridArray = []
 
-    # build more effective grid assignment build on gridarrys assignments using python dictionarys 
+    # build more effective grid assignment build on gridarrys assignments using python dictionaries 
     grid = {} # empty dict to be appended
 
     #Assign Grids
@@ -44,7 +44,7 @@ def gridBuilder(x,box,N):
         # if not add a new box 
         else:
             grid[gridPosRow,gridPosCol] = [particle]
-    # this sorts much faster as it uses the very efficent dictionarys lookups
+    # this sorts much faster as it uses the very efficient dictionaries lookups
 
     return grid,gridArray,gridLength
         
@@ -53,11 +53,11 @@ def connect(grid, gridArray,N):
     # create a empty list for each particle to store its nearby particles 
     # just a list of list [[],[],[],[],[]] <- like this
     partnet = [[] for j in range(N)]
-    # split our grid array values to into two seperate pairs instead of tuples for our dict
+    # split our grid array values to into two separate pairs instead of tuples for our dict
     for i in range(N):
         xco = gridArray[i][0]
         yco = gridArray[i][1]
-        # checks the surrounding 3X3 boxes arround this particles 
+        # checks the surrounding 3X3 boxes around this particles 
         # better that nested if loops as for loops are faster 
         for dxco in (-1,0,1):
             for dyco in (-1,0,1):
@@ -94,7 +94,7 @@ def forceWall(Forces,x,gridLength,box,part,N):
 def forceParticle(Forces,x,partNet,part,N):
     #Cycle through each particle
     for particle in range(N):
-        #cycle through all its connections
+        #Cycle through all its connections
         for neighbour in partNet[particle]:
                     #Particle A 
             A = x[:, particle]
@@ -103,10 +103,10 @@ def forceParticle(Forces,x,partNet,part,N):
             B = x[:,neighbour]
 
 
-            #Distance Between them
+            #Distance between them
             d = np.sqrt((A[0] - B[0])**2 + (A[1] - B[1])**2)
 
-            #Check if will Colide
+            #Check if will collide
             if d < 2 * part['radius'] and d>0:
                 #Angle
                 a = np.arctan2(A[1]-B[1],A[0]-B[0])
@@ -130,11 +130,14 @@ def SimulationStep(x:np.ndarray, v:np.ndarray, h:float, part:dict, box:np.ndarra
         part (dictionary['radius','spring']): Stores properties of the particle (radius r of all particles and spring constant of all particles)
         box (2x2 array): Array storing the corners of the box (np.vstack([low,upp]))
         g (float): Single number, the amount g of gravity
-        h (float): Lower bound.
+        N (Integer): Number of particles
 
     Returns:
         tuple: xnew(2xN array), vnew(2xN array) which are the updated position and velocity
     """
+    #If N is not passed into the function:
+    # N = len(x[0])
+
     #Set up forces array
     Forces = np.zeros((2,N))
 
