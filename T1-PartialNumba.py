@@ -92,7 +92,7 @@ def force_particle(N, radius, spring, X, Y, grid_index_, forces, grid):
                                 d = math.sqrt(d)
                 
                                 # Angle between particles
-                                a = np.arctan2(particle_Y - neighbour_Y, particle_X - neighbour_X)
+                                a = math.atan2(particle_Y - neighbour_Y, particle_X - neighbour_X)
 
                                 coeff = spring * (2 * radius - d)
                 
