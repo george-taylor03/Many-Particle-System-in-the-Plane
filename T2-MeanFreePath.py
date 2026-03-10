@@ -42,7 +42,7 @@ def create_grid(N, length, grid_index, grid):
         #key = particle_row * length + particle_col #--Python Ver--#
         
         if key not in grid:
-            grid[key] = List.empty_list(int64) # --Numba Ver--
+            grid[key] = List.empty_list(int64) #--Numba Ver--#
             #grid[key] = [] #--Python Ver--#
         
         grid[key].append(particle)
