@@ -14,8 +14,8 @@ import time
 # can all be true at once 
 # for part a 
 parta = True
-# for part b
-partb = False
+# for part 
+partb = True
 # for part c 
 partc = True 
 
@@ -143,7 +143,7 @@ if parta == True:
         
         for i in range((loops)):
         
-            x , v = sim.SimulationStep(x,v,h,part,box,g)
+            x , v = sim.SimulationStep(x,v,h,part,box,g)[0:2]
             
             T[i] = AvgTemp(v)
 
@@ -186,7 +186,7 @@ if parta == True:
 """ histogram for part b """
 if partb == True:
     for i in range(loops):
-        x , v = sim.SimulationStep(x, v, h, part, box, g)
+        x , v = sim.SimulationStep(x, v, h, part, box, g)[0:2]
 
     s = speed(v)
     # number of bins not sure what final value will be 
@@ -194,6 +194,4 @@ if partb == True:
     plt.hist(s,bins=bins,density=True)
     plt.ylabel('number of particles')
     plt.xlabel('final speed value')
-    # saves figure to avoid waiting for high n and not saving plot 
-    plt.savefig("speedhistogram",dpi=1500)
     plt.show()
