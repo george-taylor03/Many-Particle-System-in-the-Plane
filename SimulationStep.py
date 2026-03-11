@@ -73,23 +73,38 @@ def create_grid(N, length, grid_index, grid):
 # Checks for collisions with walls
 @njit(fastmath = True, parallel = True) #--Numba Ver--# 
 def force_wall(N, radius, spring, X, Y, box, forces):
+
+    #Array of forces  per wall
+    forceWalls = np.zeros(4)
+
     for particle in prange(N): #--Numba Ver--#
     #for particle in range(N): #--Python Ver--#
         # Position of partcle
         particle_X, particle_Y = X[particle], Y[particle]
 
+
         # Only calculate collisions for particles less than radius away from a wall
-        if particle_X < radius or particle_Y < radius or box[1, 0] - radius < particle_X or box[1, 1] - radius < particle_Y:
-            
+        if particle_X < radius + box[0,0] or particle_Y < radius + box[0,1] or box[1, 0] - radius < particle_X or box[1, 1] - radius < particle_Y:
+
+            # Position of partcle
+            particle_X, particle_Y = X[particle], Y[particle]
+
             #Assign wall focres
-            f_left = max(0, radius - particle_X)
+            f_left = max(0, radius + box[0,0] - particle_X)
             f_right = max(0, radius + particle_X - box[1, 0])
-            f_bottom = max(0, radius - particle_Y)
+            f_bottom = max(0, radius + box[0,1] - particle_Y)
             f_up = max(0, radius + particle_Y - box[1, 1])
+
+            #Adds up forces per wall
+            forceWalls[0] += f_left
+            forceWalls[1] += f_right
+            forceWalls[2] += f_bottom
+            forceWalls[3] += f_up
             
             forces[0, particle] += spring * (f_left - f_right)
             forces[1, particle] += spring * (f_bottom - f_up)
     
+    return forceWalls,forces
 
 # Checks for collisions with particles
 @njit(fastmath = True, parallel = True) #--Numba Ver--#
@@ -140,6 +155,7 @@ def force_particle(N, radius,spring, width, X, Y, grid_index, forces, grid):
 
         forces[0, particle] += particle_force_X
         forces[1, particle] += particle_force_Y
+    return forces
 
 # Returns single time step
 def SimulationStep(x,v,dt,part,box,g):
@@ -171,10 +187,11 @@ def SimulationStep(x,v,dt,part,box,g):
     # Forces of all particles
     forces = np.zeros((2, N))
 
-    force_wall(N,radius,spring, X, Y, box, forces)
-    force_particle(N, radius,spring, width, X, Y, grid_index, forces, grid)
+    forcesWalls,forces = force_wall(N,radius,spring, X, Y, box, forces)
+    forces = force_particle(N, radius,spring, width, X, Y, grid_index, forces, grid)
+
     
     x_new = x + dt * v + dt * dt * forces # Updated positions
     v_new = (x_new - x) / dt # Updated velocities
     
-    return x_new, v_new
+    return x_new, v_new , forcesWalls
