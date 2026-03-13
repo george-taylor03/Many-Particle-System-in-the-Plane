@@ -164,6 +164,7 @@ def force_particle(N, radius,spring, width, X, Y, grid_index, forces, grid,parti
 
         forces[0, particle] += particle_force_X
         forces[1, particle] += particle_force_Y
+
     return forces
 
 # Returns single time step
@@ -174,7 +175,7 @@ def SimulationStep(x,v,dt,part,box,g):
 
     #Assign N
     N = len(x[0])
-
+    
     # Size of each box in grid
     box_length = 2 * radius
 
@@ -204,6 +205,7 @@ def SimulationStep(x,v,dt,part,box,g):
     
     forcesWalls,forces,wall_collision_particles = force_wall(N,radius,spring, X, Y, box, forces)
     forces = force_particle(N, radius,spring, width, X, Y, grid_index, forces, grid,particle_dicts)
+    forces[1, :] += -g
     particle_collision_particles = set()
     
     for dict in particle_dicts:
