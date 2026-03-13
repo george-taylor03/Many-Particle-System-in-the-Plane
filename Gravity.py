@@ -79,7 +79,8 @@ def density_calc(x,low,upp,y_bins):
     density = count/area
     return density
 # code for function fitting # i think this is correct not sure 
-# guess for fitting is y = A.e^-By so need logs
+# guess for fitting is y = A.e^-By so need logs 
+# expect lots of particles at bottom and few at top
 def density_function(y_middles,density_avg):
     
     # remove any 0 as will be using logs due to guess of Exp function
