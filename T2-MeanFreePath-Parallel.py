@@ -106,35 +106,31 @@ def force_particle(N, radius, spring, width, X, Y, grid_index, forces, grid, par
                 if neighbour_index in grid:
                     # Calculates forces between current particle and all other particles in current_box
                     for neighbour in grid[neighbour_index]:
-                        # Uses Fa = -Fb
-                        if particle < neighbour:
-                            # Positions of neighbour
-                            neighbour_X, neighbour_Y = X[neighbour], Y[neighbour]
+                        # Positions of neighbour
+                        neighbour_X, neighbour_Y = X[neighbour], Y[neighbour]
                             
-                            # Distance between the two particles (squared)
-                            diff_X = particle_X - neighbour_X
-                            diff_Y = particle_Y - neighbour_Y
-                            distance = diff_X * diff_X + diff_Y * diff_Y
+                        # Distance between the two particles (squared)
+                        diff_X = particle_X - neighbour_X
+                        diff_Y = particle_Y - neighbour_Y
+                        distance = diff_X * diff_X + diff_Y * diff_Y
             
-                            # Checks if particles have collided
-                            if 0 < distance < condition:
-                                # Actual distance
-                                distance = math.sqrt(distance)
+                        # Checks if particles have collided
+                        if 0 < distance < condition:
+                            # Actual distance
+                            distance = math.sqrt(distance)
                 
-                                # Angle between particles
-                                alpha = math.atan2(diff_Y, diff_X)
+                            # Angle between particles
+                            alpha = math.atan2(diff_Y, diff_X)
 
-                                # Forces
-                                coeff = spring * (2 * radius - distance)
+                            # Forces
+                            coeff = spring * (2 * radius - distance)
 
-                                force_X, force_Y = coeff * math.cos(alpha), coeff * math.sin(alpha)
+                            force_X, force_Y = coeff * math.cos(alpha), coeff * math.sin(alpha)
                 
-                                particle_force_X += force_X
-                                particle_force_Y += force_Y
-                                
-                                forces[0, neighbour] -= force_X
-                                forces[1, neighbour] -= force_Y
+                            particle_force_X += force_X
+                            particle_force_Y += force_Y
 
+                            if particle < neighbour:
                                 particle_dicts[get_thread_id()][(int64(particle), neighbour)] = True
 
         forces[0, particle] += particle_force_X
