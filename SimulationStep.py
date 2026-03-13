@@ -11,6 +11,9 @@ from numba.core import types #--Numba Ver--#
 
 # Numba Notes:
     # User manual - https://numba.readthedocs.io/en/stable/user/index.html
+
+    # Currently only works for Numba version, ignore Python lines for now
+    
     # Lines with comments '#--Numba Ver--#' -> uncommenting = Numba version
     # Lines with comments '#--Python Ver--#' -> uncommenting = Python version
         # Choose one version to run
@@ -40,7 +43,7 @@ def create_grid_index(N, box_length, length, width, X, Y):
     #grid_index = np.empty((2, N)) #--Python Ver--#
     
     for particle in range(N):
-        # Position of partcle
+        # Position of particle
         particle_X, particle_Y = X[particle], Y[particle]
         
         # Prevents particle's index from being outside the grid
@@ -73,47 +76,44 @@ def create_grid(N, length, grid_index, grid):
 # Checks for collisions with walls
 @njit(fastmath = True, parallel = True) #--Numba Ver--# 
 def force_wall(N, radius, spring, X, Y, box, forces):
-    # Array of forces for each wall
-    forces_walls = np.zeros(4)
+    # Total forces for each individual wall
+    forces_left_wall, forces_right_wall, forces_bottom_wall, forces_upper_wall = 0.0, 0.0, 0.0, 0.0
     
     # Note: If wall forces are changed to stop them from going through walls for multiple steps -> can instead create collision count for all particles and add 1 whenever wall collision
     wall_collision_particles = np.zeros(N, dtype = np.bool_)
 
     for particle in prange(N): #--Numba Ver--#
     #for particle in range(N): #--Python Ver--#
-        # Position of partcle
+        # Position of particle
         particle_X, particle_Y = X[particle], Y[particle]
 
         # Only calculate collisions for particles less than radius away from a wall
         if particle_X < radius + box[0, 0] or particle_Y < radius + box[0, 1] or box[1, 0] - radius < particle_X or box[1, 1] - radius < particle_Y:
-
-            # Position of partcle
-            particle_X, particle_Y = X[particle], Y[particle]
-
-            # Assign wall focres
-            f_left = max(0, radius + box[0,0] - particle_X)
+            # Assign wall forces
+            f_left = max(0, radius + box[0, 0] - particle_X)
             f_right = max(0, radius + particle_X - box[1, 0])
-            f_bottom = max(0, radius + box[0,1] - particle_Y)
-            f_up = max(0, radius + particle_Y - box[1, 1])
+            f_bottom = max(0, radius + box[0, 1] - particle_Y)
+            f_upper = max(0, radius + particle_Y - box[1, 1])
 
-            # Adds up forces per wall
-            # Note: Race condition?
-            forces_walls[0] += f_left
-            forces_walls[1] += f_right
-            forces_walls[2] += f_bottom
-            forces_walls[3] += f_up
-            
+            # Adds to forces for each wall
+            forces_left_wall += f_left
+            forces_right_wall += f_right
+            forces_bottom_wall += f_bottom
+            forces_upper_wall += f_upper
+
+            # Wall force for particle
             forces[0, particle] += spring * (f_left - f_right)
-            forces[1, particle] += spring * (f_bottom - f_up)
+            forces[1, particle] += spring * (f_bottom - f_upper)
             
             wall_collision_particles[particle] = True
+
+    forces_walls = np.array([forces_left_wall, forces_right_wall, forces_bottom_wall, forces_upper_wall])
     
     return forces_walls, forces, wall_collision_particles
 
 # Checks for collisions with particles
 @njit(fastmath = True, parallel = True) #--Numba Ver--#
 def force_particle(N, radius, spring, width, X, Y, grid_index, forces, grid, particle_dicts):
-
     # Condition used to check if two particles have collided
     condition = 4 * radius * radius # = (2 * radius) ** 2
     
@@ -124,6 +124,9 @@ def force_particle(N, radius, spring, width, X, Y, grid_index, forces, grid, par
         
         # Force to be added for particle
         particle_force_X, particle_force_Y = 0, 0
+
+        # Position of particle
+        particle_X, particle_Y = X[particle], Y[particle]
         
         # Checks boxes around particle's box
         for i in (-1, 0, 1):
@@ -132,8 +135,8 @@ def force_particle(N, radius, spring, width, X, Y, grid_index, forces, grid, par
                 if neighbour_index in grid:
                     # Calculates forces between current particle and all other particles in current_box
                     for neighbour in grid[neighbour_index]:
-                        # Positions of particle and neighbour
-                        particle_X, particle_Y = X[particle], Y[particle] 
+                        # Position of neighbour
+                        particle_X, particle_Y = X[particle], Y[particle]
                         neighbour_X, neighbour_Y = X[neighbour], Y[neighbour]
                             
                         # Distance between the two particles (squared)
