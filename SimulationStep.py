@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import math
 import time
 from matplotlib.patches import Rectangle
-from numba import njit, prange, int64 #--Numba Ver--#
+from numba import njit, prange, int64, get_num_threads, get_thread_id #--Numba Ver--#
 from numba.typed import List, Dict #--Numba Ver--#
 from numba.core import types #--Numba Ver--#
 
@@ -73,7 +73,8 @@ def create_grid(N, length, grid_index, grid):
 # Checks for collisions with walls
 @njit(fastmath = True, parallel = True) #--Numba Ver--# 
 def force_wall(N, radius, spring, X, Y, box, forces):
-
+     # Note: If wall forces are changed to stop them from going through walls for multiple steps -> can instead create collision count for all particles and add 1 whenever wall collision
+    wall_collision_particles = np.zeros(N, dtype = np.bool_)
     #Array of forces  per wall
     forceWalls = np.zeros(4)
 
@@ -103,12 +104,14 @@ def force_wall(N, radius, spring, X, Y, box, forces):
             
             forces[0, particle] += spring * (f_left - f_right)
             forces[1, particle] += spring * (f_bottom - f_up)
+            
+            wall_collision_particles[particle] = True
     
-    return forceWalls,forces
+    return forceWalls,forces,wall_collision_particles
 
 # Checks for collisions with particles
 @njit(fastmath = True, parallel = True) #--Numba Ver--#
-def force_particle(N, radius,spring, width, X, Y, grid_index, forces, grid):
+def force_particle(N, radius,spring, width, X, Y, grid_index, forces, grid,particle_dicts):
 
     # Condition used to check if two particles have collided
     condition = 4 * radius * radius # = (2 * radius) ** 2
@@ -152,6 +155,12 @@ def force_particle(N, radius,spring, width, X, Y, grid_index, forces, grid):
                 
                             particle_force_X += force_X
                             particle_force_Y += force_Y
+                            
+                            
+                            forces[0, neighbour] -= force_X
+                            forces[1, neighbour] -= force_Y
+
+                            particle_dicts[get_thread_id()][(int64(particle), neighbour)] = True
 
         forces[0, particle] += particle_force_X
         forces[1, particle] += particle_force_Y
@@ -176,6 +185,12 @@ def SimulationStep(x,v,dt,part,box,g):
     # Key = index of grid (int), Value = indexes of particles (list)
     grid_empty = Dict.empty(key_type = types.int64, value_type = types.ListType(types.int64)) #--Numba Ver--#
     #grid_empty = {} #--Python Ver--#
+    # List of dictionaries, length is number of CPU cores available
+    particle_dicts = []
+    
+    for i in range(get_num_threads()):
+        # value doesn't matter for dictionaries, only need keys (= (particle index, neighbour index))
+        particle_dicts.append(Dict.empty(key_type = types.UniTuple(types.int64, 2), value_type = types.boolean))
     
     # x and y coordinates of all particles
     X, Y = x[0], x[1]
@@ -186,12 +201,21 @@ def SimulationStep(x,v,dt,part,box,g):
 
     # Forces of all particles
     forces = np.zeros((2, N))
-
-    forcesWalls,forces = force_wall(N,radius,spring, X, Y, box, forces)
-    forces = force_particle(N, radius,spring, width, X, Y, grid_index, forces, grid)
-
+    
+    forcesWalls,forces,wall_collision_particles = force_wall(N,radius,spring, X, Y, box, forces)
+    forces = force_particle(N, radius,spring, width, X, Y, grid_index, forces, grid,particle_dicts)
+    particle_collision_particles = set()
+    
+    for dict in particle_dicts:
+        for key in dict:
+            particle_collision_particles.add(key)
+    
     
     x_new = x + dt * v + dt * dt * forces # Updated positions
-    v_new = (x_new - x) / dt # Updated velocities
-    
-    return x_new, v_new , forcesWalls
+    ######
+    x_diff = x_new - x # Difference between old and new positions
+    v_new = x_diff / dt # Updated velocities
+
+    X_diff, Y_diff = x_diff[0], x_diff[1]
+    distance = np.sqrt(X_diff * X_diff + Y_diff * Y_diff) # Distance travelled
+    return x_new, v_new , forcesWalls, distance, wall_collision_particles, particle_collision_particles

@@ -195,3 +195,51 @@ if partb == True:
     plt.ylabel('number of particles')
     plt.xlabel('final speed value')
     plt.show()
+
+
+""" mean free parth for part c   """
+if partc == True:
+    
+    
+    # Total distance travelled for each particle
+    distance = np.zeros((2, N))
+
+    # Particles that collided with walls in previous time step
+    old_wall_collision_particles = np.zeros(N, np.bool_)
+
+    # Pairs of particles that collided in previous time step
+    old_particle_collision_particles = set()
+
+    # Count for each particle's number of collisions
+    particle_collision_count = np.ones(N)
+    for i in range(loops):
+    
+
+        x, v,_, distance_step, new_wall_collision_particles, new_particle_collision_particles = sim.SimulationStep(x, v, h, part, box, g)
+
+        distance += distance_step
+
+        # Adds 1 to particle's collision count if particle is in the new collision list but not in the old list
+        # Sets old collision lists to new after counting
+        # Wall collisions
+        for particle in range(N):
+            if new_wall_collision_particles[particle] and not old_wall_collision_particles[particle]:
+                particle_collision_count[particle] += 1
+        
+        old_wall_collision_particles = new_wall_collision_particles
+
+        # Particle collisions
+        if new_particle_collision_particles:
+            for particle, neighbour in new_particle_collision_particles:
+                if (particle, neighbour) not in old_particle_collision_particles:
+                    particle_collision_count[particle] += 1
+                    particle_collision_count[neighbour] += 1
+
+            old_particle_collision_particles = new_particle_collision_particles
+        
+
+
+
+
+    # Overall mean free path
+    print(f'Overall mean free path: {np.average(distance / particle_collision_count)}')

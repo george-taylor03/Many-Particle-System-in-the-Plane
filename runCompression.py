@@ -114,7 +114,7 @@ for i in range(int(loops)):
     box = np.vstack([low,upp])
 
     #Run Simulation
-    x , v, forceW = sim.SimulationStep(x, v, h, part, box, g)
+    x , v, forceW = sim.SimulationStep(x, v, h, part, box, g)[0:3]
 
         #Records initial pressure
     if i<int(tor1/h):
