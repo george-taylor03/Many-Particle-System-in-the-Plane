@@ -8,14 +8,15 @@ from numba.typed import List, Dict
 from numba.core import types
 
 # Note: Faster than T2-MeanFreePath for around p > 5
+    # SimulationStep slower for p < 5 using this version (still pretty fast)
 
 # Changes: force_particle is parallel
 
 # Small explanation:
     # if force_particle is parallel -> method of finding particle collisions changes
     
-    # parallel = True for function -> each available CPU core carries out function separately
-    # Dictionaries aren't thread safe -> normal dictionary can't be used in parallel function
+    # parallel = True for function -> each available CPU core carries out prange loop separately
+    # Dictionaries aren't thread safe -> normal dictionary can't be used in parallel loop
     # Instead create list of dictionaries (length = number of available CPU cores)
     # Each thread adds to their own dictionary in list -> get's rid of thread safety problem
     # Add each key in each dictionary in list to set (= particle_collision_particles)
