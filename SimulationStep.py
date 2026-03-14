@@ -136,7 +136,6 @@ def force_particle(N, radius, spring, width, X, Y, grid_index, forces, grid, par
                     # Calculates forces between current particle and all other particles in current_box
                     for neighbour in grid[neighbour_index]:
                         # Position of neighbour
-                        particle_X, particle_Y = X[particle], Y[particle]
                         neighbour_X, neighbour_Y = X[neighbour], Y[neighbour]
                             
                         # Distance between the two particles (squared)
