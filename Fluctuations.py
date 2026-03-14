@@ -39,8 +39,10 @@ pmax = p
 # Particle constant radius and elasticity
 part = {"radius" : 0.2, "spring" : 250}
 
-# Timestep
-tini = 0
+# Gravity
+g = 0
+
+# Timestep (starts at t = 0)
 tend = 20
 h = 0.01
 loops = int(tend / h)
@@ -48,16 +50,11 @@ loops = int(tend / h)
 # Last number of timesteps to be analysed
 nrec = 1000
 
-t = np.arange(tini, tend, h)
-
 low = np.array([0, 0])
 upp = np.array([10, 10]) * math.sqrt(N)
 
 # Box Dimensions
 box = np.vstack([low, upp])
-
-# Gravity
-g = 0
 
 # Initial position
 x = np.vstack([low[0] + rand(1, N) * (upp[0] - low[0]),
@@ -78,9 +75,12 @@ if partA:
     # Which timesteps to update time estimation
     #Update = np.arange(1, (loops), int(loops/NTimeUpdates))
 
+    # Average temperatures
     T = np.zeros(loops)
+    # Standard deviations
     S = np.zeros(pmax)
 
+    # List of N's for plotting
     Nplot = []
 
     # Collecting data for each p up to pmax
@@ -138,7 +138,7 @@ if partA:
         Temp = T[-nrec - 1:] # Note: Come up with better variable name
         print(f"Over the last {nrec} timesteps, average temperature = {Temp.mean()} and range as a fraction of the average = {(Temp.max() - Temp.min()) / Temp.mean()}\n")
         
-        # Temperature graphs for each p value
+        # Temperature graphs for each p
         if TemperatureGraph:
             plt.plot(np.arange(0, loops, 1), T, label = 4 ** p)
             plt.xlabel('Timestep')
@@ -167,7 +167,7 @@ if partB:
     plt.show()
 
 
-""" mean free parth for part c   """
+""" mean free parth for part c """
 if partC:
     # Total distance travelled for each particle
     distance = np.zeros((2, N))
