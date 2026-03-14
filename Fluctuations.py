@@ -198,10 +198,9 @@ if partC:
 
         # Particle collisions
         if new_particle_collision_particles:
-            for particle, neighbour in new_particle_collision_particles:
-                if (particle, neighbour) not in old_particle_collision_particles:
-                    particle_collision_count[particle] += 1
-                    particle_collision_count[neighbour] += 1
+            for particle, neighbour in new_particle_collision_particles - old_particle_collision_particles:
+                particle_collision_count[particle] += 1
+                particle_collision_count[neighbour] += 1
 
             old_particle_collision_particles = new_particle_collision_particles
     
