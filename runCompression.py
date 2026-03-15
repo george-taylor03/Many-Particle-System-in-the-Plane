@@ -10,7 +10,7 @@ from matplotlib.patches import Rectangle
 
 
 #Number of Particles
-p=7
+p=3
 N = 4**p
 
 #Particle Constant Radius and Elasticity
@@ -22,7 +22,7 @@ part = {
 
 #Timestep
 tini = 0
-tend=100
+tend=100   
 h = 0.01
 loops = tend/h
 
@@ -66,15 +66,13 @@ plt.xlim(low[0] - diff[0], upp[0] + diff[0])
 plt.ylim(low[1] - diff[1], upp[1] + diff[1])
 
 #Wall speed
-a=40
-
+a=50
 #Settled Time tor
 tor1 = 5
 tor2 = tor1 + (5 * np.sqrt(N))/a
 
-
 #Two time periods after settled from compression
-tor3 = tor2 + 20
+tor3 = 50
 tor4 = tor3 + 20
 
 torTimes = np.arange(tor1,tor2,h)
@@ -114,7 +112,7 @@ for i in range(int(loops)):
     box = np.vstack([low,upp])
 
     #Run Simulation
-    x , v, forceW = sim.SimulationStep(x, v, h, part, box, g)[0:3]
+    x , v, forceW,_,_,_,_ = sim.SimulationStep(x, v, h, part, box, g)
 
         #Records initial pressure
     if i<int(tor1/h):
@@ -123,7 +121,7 @@ for i in range(int(loops)):
         pInit[1] += forceW[1] / box[1,1]
         pInit[2] += forceW[2] / box[1,0]
         pInit[3] += forceW[3] / box[1,0]
-
+    
     #Measure Temperature and pressure after at tor3 and tor4
     elif i >= int(tor3/h) and i<int(tor4/h):
         T.append(np.average((v[0]**2 + v[1]**2)/2))
@@ -135,7 +133,7 @@ for i in range(int(loops)):
         pComp[3] += forceW[3] / box[1,0]
 
         #Finds pressure over serverl timesteps
-        if i % 20 == 0:
+        if (i-int(tor3/h)) % 20 == 0:
             #Average perssure over serveral timesteps
             pComp = pComp / 20
             #Total box pressure
@@ -146,7 +144,6 @@ for i in range(int(loops)):
 
             #Add recorded pressure time. Muktiple by h to get to normal time not per timestep
             pressTimes.append(i*h)
-
 
     if i%1==0:
         boxline.set_ydata([upp[1],upp[1]])
@@ -162,16 +159,19 @@ print(f"Inital Average Pressure {np.average(pInit / (tor1/h))}")
 #Compressed average Pressure
 print(f"Compressed Average Pressure {np.average(pBox)}")
 
-#Plot temperature of box between tor3 and tor 4
-plt.xlabel("Time (seconds)")
-plt.ylabel("Temperature (Joules)")
-plt.plot(tempTimes,T,label = f"Temperature over Time for Wall Speed a = {a}")
+#Average Temp over tor3 and tor4
+print(f"Average Compressed Temperature {np.average(T)}")
 
+#Plot temperature of box between tor3 and tor 4
+plt.xlabel("Time")
+plt.ylabel("Temperature")
+plt.plot(tempTimes,T,label = f"Temperature over Time for Wall Speed a = {a}")
+plt.legend()
 plt.show()
 
 #Plot plot average pressure of all wals between tor3 and tor4
-plt.xlabel("Time Seconds")
+plt.xlabel("Time")
 plt.ylabel("Pressure")
 plt.plot(pressTimes,pBox, label = f"Pressure over Time for Wall Speed a = {a}")
-
+plt.legend()
 plt.show()
