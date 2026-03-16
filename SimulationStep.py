@@ -76,11 +76,16 @@ def create_grid(N, length, grid_index, grid):
 # Checks for collisions with walls
 @njit(fastmath = True, parallel = True) #--Numba Ver--# 
 def force_wall(N, radius, spring, X, Y, box, forces):
+
+    #Force on verticle walls
+    vWalls = np.zeros(N)
+
     # Total forces for each individual wall
     forces_left_wall, forces_right_wall, forces_bottom_wall, forces_upper_wall = 0.0, 0.0, 0.0, 0.0
     
     # Note: If wall forces are changed to stop them from going through walls for multiple steps -> can instead create collision count for all particles and add 1 whenever wall collision
     wall_collision_particles = np.zeros(N, dtype = np.bool_)
+
 
     for particle in prange(N): #--Numba Ver--#
     #for particle in range(N): #--Python Ver--#
@@ -107,13 +112,16 @@ def force_wall(N, radius, spring, X, Y, box, forces):
             
             wall_collision_particles[particle] = True
 
+            #Adds verticle wall forces
+            vWalls[particle] += f_left - f_right
+
     forces_walls = np.array([forces_left_wall, forces_right_wall, forces_bottom_wall, forces_upper_wall])
     
-    return forces_walls, forces, wall_collision_particles
+    return forces_walls, forces, wall_collision_particles, vWalls
 
 # Checks for collisions with particles
 @njit(fastmath = True, parallel = True) #--Numba Ver--#
-def force_particle(N, radius, spring, width, X, Y, grid_index, forces, grid, particle_collision_lists):
+def force_particle(N, radius, spring, width, X, Y, grid_index, forces, grid, particle_dicts):
     # Condition used to check if two particles have collided
     condition = 4 * radius * radius # = (2 * radius) ** 2
     
@@ -159,9 +167,9 @@ def force_particle(N, radius, spring, width, X, Y, grid_index, forces, grid, par
                             particle_force_X += force_X
                             particle_force_Y += force_Y
 
-                            # Adding (particle, neighbour) to thread's list
+                            # Adding (particle, neighbour) to thread's dictionary
                             if particle < neighbour:
-                                particle_collision_lists[get_thread_id()].append((int64(particle), neighbour))
+                                particle_dicts[get_thread_id()][(int64(particle), neighbour)] = True
 
         forces[0, particle] += particle_force_X
         forces[1, particle] += particle_force_Y
@@ -191,11 +199,12 @@ def SimulationStep(x, v, dt, part, box, g):
     grid_empty = Dict.empty(key_type = types.int64, value_type = types.ListType(types.int64)) #--Numba Ver--#
     #grid_empty = {} #--Python Ver--#
     
-    # List of lists for particle collisions, each thread has it's own list (to avoid race condition in force_particle)
-    particle_collision_lists = []
+    # List of dictionaries for particle forces, each thread has it's own dictionary
+    particle_dicts = []
     
     for i in range(get_num_threads()):
-        particle_collision_lists.append(List.empty_list(types.UniTuple(types.int64, 2)))
+        # value doesn't matter for dictionaries, only need keys (= (particle index, neighbour index))
+        particle_dicts.append(Dict.empty(key_type = types.UniTuple(types.int64, 2), value_type = types.boolean))
 
     # Splits box into grid and assigns each particle to grid
     grid_index = create_grid_index(N, box_length, length, width, X, Y)
@@ -205,13 +214,16 @@ def SimulationStep(x, v, dt, part, box, g):
     forces = np.zeros((2, N))
 
     # Wall forces
-    forces_walls, forces, wall_collision_particles = force_wall(N, radius, spring, X, Y, box, forces)
+    forces_walls, forces, wall_collision_particles, vWalls = force_wall(N,radius,spring, X, Y, box, forces)
 
     # Particle forces
-    forces = force_particle(N, radius, spring, width, X, Y, grid_index, forces, grid, particle_collision_lists)
+    forces = force_particle(N, radius,spring, width, X, Y, grid_index, forces, grid,particle_dicts)
     
-    # Adds all elements in each list in particle_collision_lists to a set
-    particle_collision_particles = set().union(*particle_collision_lists)
+    particle_collision_particles = set()
+    
+    for dict in particle_dicts:
+        for key in dict:
+            particle_collision_particles.add(key)
 
     # Gravity forces
     forces[1, :] += -g
@@ -223,4 +235,4 @@ def SimulationStep(x, v, dt, part, box, g):
     X_diff, Y_diff = x_diff[0], x_diff[1]
     distance = np.sqrt(X_diff * X_diff + Y_diff * Y_diff) # Distance travelled
     
-    return x_new, v_new , forces_walls, distance, wall_collision_particles, particle_collision_particles
+    return x_new, v_new , forces_walls, distance, wall_collision_particles, particle_collision_particles, vWalls
