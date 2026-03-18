@@ -6,9 +6,6 @@ from numba.core import types
     
 # Numba user manual: - https://numba.readthedocs.io/en/stable/user/index.html
 
-np.random.seed(1)
-ran = np.random.rand
-
 # Creates list of all particle's indexes
 @njit
 def create_grid_index(N, box_length, length, width, X, Y):
