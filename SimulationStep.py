@@ -1,8 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import math
-import time
-from matplotlib.patches import Rectangle
 from numba import njit, prange, int64, get_num_threads, get_thread_id
 from numba.typed import List, Dict
 from numba.core import types
@@ -50,15 +47,14 @@ def create_grid(N, length, grid_index, grid):
 @njit(fastmath = True, parallel = True)
 def force_wall(N, radius, spring, X, Y, box, forces):
 
-    #Force on verticle walls
+    # Force on verticle walls
     vWalls = np.zeros(N)
 
     # Total forces for each individual wall
     forces_left_wall, forces_right_wall, forces_bottom_wall, forces_upper_wall = 0.0, 0.0, 0.0, 0.0
-    
-    # Note: If wall forces are changed to stop them from going through walls for multiple steps -> can instead create collision count for all particles and add 1 whenever wall collision
-    wall_collision_particles = np.zeros(N, dtype = np.bool_)
 
+    # List of Falses, set to True (at particle's index) if particle is currently colliding with a wall
+    wall_collision_particles = np.zeros(N, dtype = np.bool_)
 
     for particle in prange(N):
         # Position of particle
