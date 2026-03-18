@@ -4,7 +4,8 @@ from math import *
 rand = np.random.rand
 import matplotlib.pyplot as plt
 import SimulationStep as sim
-import time
+from numba import njit, prange, get_num_threads, get_thread_id
+
 # Set up values 
 
 
@@ -62,6 +63,22 @@ v=2*(rand(2,N)-0.5)*vini
 # split y axis in to 25 lots can change
 nbins = 25 
 density_total = np.zeros(nbins)    
+# Length of each grid
+binLength = upp[1] / nbins
+
+# y middle of bins for plot
+yMids = np.arange(binLength / 2, upp[1], binLength)
+
+# Pressure on left and right wall
+leftWall = np.zeros(nbins)
+rightWall = np.zeros(nbins)
+
+# Times to measure pressure 
+tor1 = 20
+tor2 = 40
+
+# Used in simulation for times in [tor1, tor2]
+condition1, condition2 = int(tor1 / h), int(tor2 / h) # Note: Come up with better variable names
 # actually set up lot assigning
 y_bins = np.linspace(low[1],upp[1],nbins+1)
 # for plotting density you want the centre of the box for y co-ord
@@ -102,19 +119,81 @@ def density_function(y_middles,density_avg):
     # return A, B for plotting again actual denstity 
     return A,B
 
+@njit(parallel = True)
+def calculate_pressure(N, nbins, binLength, Y, vWalls, leftWall, rightWall):
+    thread_num = get_num_threads()
+    # To remove race conditions each thread has it's own list
+    leftForceParallel = np.zeros(nbins * thread_num)
+    rightForceParallel = np.zeros(nbins * thread_num)
+
+    for particle in prange(N):
+        # Force for current particle against vertical wall
+        vWallsParticle = vWalls[particle]
+        
+        if vWallsParticle != 0:
+            # Bin location on wall
+            loc = int(Y[particle] / binLength)
+            
+            # vWallsParticle is positive if particle is at left wall and negative if at right wall
+            # Left wall
+            if vWallsParticle > 0:
+                leftForceParallel[loc + nbins * get_thread_id()] += vWallsParticle
+            # Right wall
+            else:
+                rightForceParallel[loc + nbins * get_thread_id()] -= vWallsParticle
+
+    # Converts parallel lists to normal lists
+    leftForce = np.zeros(nbins)
+    rightForce = np.zeros(nbins)
+
+    for i in range(thread_num):
+        thread_list = i * nbins
+        for j in range(nbins):
+            leftForce[j] += leftForceParallel[thread_list + j]
+            rightForce[j] += rightForceParallel[thread_list + j]
+    
+    # Add pressure from current iteration
+    leftWall += leftForce / binLength
+    rightWall += rightForce / binLength
+
+# there really is not effect that gravity has because it is far too low and our box is far to big
+
+def pressure_function(ymids, leftWall, rightWall):
+
+    pressure = leftWall + rightWall
+
+    # remove zeros
+    data = pressure > 0
+    y_fit = ymids[data]
+    p_fit = pressure[data]
+
+    logp = np.log(p_fit)
+
+    # fit log P = log C - b y
+    poly = np.polynomial.polynomial.Polynomial.fit(y_fit, logp, 1)
+    poly = poly.convert()
+
+    C = np.exp(poly.coef[0])
+    b = -poly.coef[1]
+
+    print(f'Estimated pressure: P(y)= {C:.4e} * exp(-{b:.4e} y)')
+
+    return C, b
 for i in range(loops):
-    x , v = sim.SimulationStep(x, v, h, part, box, g)[0:2]
+    x, v, _, _, _, _, vWalls = sim.SimulationStep(x, v, h, part, box, g)
 
     # after eq
     if i> nrec:
         density = density_calc(x,low,upp,y_bins)
         density_total += density
+        calculate_pressure(N, nbins, binLength, x[1], vWalls, leftWall, rightWall)
+
         
     #if i%5==0:
         #data = np.c_[np.array(x[0]),np.array(x[1])]
         #scatter.set_offsets(data)
         #plt.pause(0.01)
-#plt.show()
+
 
 
 # work out average density in your lots across time 
@@ -127,5 +206,33 @@ plt.plot(y_middles,density_avg,'o',label = 'simulated denstity')
 plt.plot(y_middles,fit,label = 'fitted function')
 plt.xlabel('height y')
 plt.ylabel('denstity')
+plt.legend()
+plt.show()
+
+# Time pressure was taken accross
+torDiff = loops-nrec
+
+# Average pressure across time 
+leftWall *= h / torDiff
+rightWall *= h / torDiff
+C,D = pressure_function(yMids,leftWall,rightWall)
+fit2 = C * np.exp(-D * yMids)
+# Plot pressure on each verticle wall
+plt.xlabel("Vertical height y")
+plt.ylabel("Pressure")
+plt.plot(yMids, leftWall, "o", label = "Pressure of left wall against vertical height")
+plt.legend(loc = 'upper right')
+plt.show()
+
+plt.xlabel("Vertical height y")
+plt.ylabel("Pressure")
+plt.plot(yMids, rightWall, "o", label = "Pressure of right wall against vertical height")
+plt.legend(loc = 'upper right')
+plt.show()
+
+plt.xlabel("Vertical height y")
+plt.ylabel("Pressure")
+plt.plot(yMids,fit2,label = 'fitted function')
+plt.plot(yMids,leftWall+rightWall,'o', label ='pressure across both walls against vertical height')
 plt.legend()
 plt.show()
