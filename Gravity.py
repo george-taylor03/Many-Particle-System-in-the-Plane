@@ -62,7 +62,8 @@ v=2*(rand(2,N)-0.5)*vini
 # code for density 
 # split y axis in to 25 lots can change
 nbins = 25 
-density_total = np.zeros(nbins)    
+density_total = np.zeros(nbins)   
+temp_total = np.zeros(nbins)   
 # Length of each grid
 binLength = upp[1] / nbins
 
@@ -79,16 +80,16 @@ tor2 = 40
 
 # Used in simulation for times in [tor1, tor2]
 condition1, condition2 = int(tor1 / h), int(tor2 / h) # Note: Come up with better variable names
-# actually set up lot assigning
+# actually set up bin assigning
 y_bins = np.linspace(low[1],upp[1],nbins+1)
 # for plotting density you want the centre of the box for y co-ord
 y_middles = 0.5 *(y_bins[:-1]+y_bins[1:])
 def density_calc(x,low,upp,y_bins):
 
     
-    # count particles in lots , _ is for unused output of np.histogram
+    # count particles in bin , _ is for unused output of np.histogram
     count, _ = np.histogram(x[1,:],bins=y_bins)
-    # work out area of lots for density calc
+    # work out area of bins for density calc
     lot_h = y_bins[1] - y_bins[0]
     width = upp[0] -low[0]
     area = width*lot_h
@@ -118,6 +119,33 @@ def density_function(y_middles,density_avg):
     print(f'Estimated denstity function: d(y)= {A:.4f} * exp(-{B:.4f}y)')
     # return A, B for plotting again actual denstity 
     return A,B
+
+
+
+def temp_calc(x,v,y_bins):
+    # particle y pos
+    y = x[1,:]
+    # k.e par part
+    ke = 0.5 * (v[0,:]*v[0,:] + v[1,:]*v[1,:])
+    # count particles in bins , _ is for unused output of np.histogram
+    count, _ = np.histogram(x[1,:],bins=y_bins)
+    # sum of ke in each bin 
+    energy_count, _ =  np.histogram(y, bins=y_bins, weights=ke)
+    temp = np.zeros_like(energy_count)
+    
+    # remove all bins with zero particles
+    temp [count > 0] = energy_count[count > 0] / count[count > 0]
+    return temp
+# this is just a straight line no dependence which i think makes sense as temp is averaged and doesnt rely on number of particles like denstity and pressure do just speed and they 
+# are all effected by gravity the same so will just fit a straight line to this
+def temp_fitting(temp):
+    data = temp > 0 
+    
+    t = temp[data]
+    T = np.mean(t)
+    print(f"Estimated temperature: T ≈ {T:.4f}")
+    return T
+
 
 @njit(parallel = True)
 def calculate_pressure(N, nbins, binLength, Y, vWalls, leftWall, rightWall):
@@ -164,13 +192,13 @@ def pressure_function(ymids, leftWall, rightWall):
 
     # remove zeros
     data = pressure > 0
-    y_fit = ymids[data]
-    p_fit = pressure[data]
+    y = ymids[data]
+    p = pressure[data]
 
-    logp = np.log(p_fit)
+    logp = np.log(p)
 
     # fit log P = log C - b y
-    poly = np.polynomial.polynomial.Polynomial.fit(y_fit, logp, 1)
+    poly = np.polynomial.polynomial.Polynomial.fit(y, logp, 1)
     poly = poly.convert()
 
     C = np.exp(poly.coef[0])
@@ -187,19 +215,23 @@ for i in range(loops):
         density = density_calc(x,low,upp,y_bins)
         density_total += density
         calculate_pressure(N, nbins, binLength, x[1], vWalls, leftWall, rightWall)
+        temp = temp_calc(x,v,y_bins)
+        temp_total += temp
 
-        
-    #if i%5==0:
         #data = np.c_[np.array(x[0]),np.array(x[1])]
         #scatter.set_offsets(data)
         #plt.pause(0.01)
 
 
 
+
+
 # work out average density in your lots across time 
 density_avg = density_total/(loops-nrec)
+
 A,B = density_function(y_middles,density_avg)
-# plot of denstity again estimated denstity.
+#C,D = density_function(y_middles,density_avg)
+
 fit = A*np.exp(-B * y_middles)
 
 plt.plot(y_middles,density_avg,'o',label = 'simulated denstity')
@@ -208,9 +240,22 @@ plt.xlabel('height y')
 plt.ylabel('denstity')
 plt.legend()
 plt.show()
+# temp plotting
 
-# Time pressure was taken accross
+T = temp_fitting(temp)
+temp_avg = temp_total /(loops - nrec)
+plt.plot(y_middles,temp_avg,'o')
+plt.axhline(T,label ='constant fit')
+plt.show()
+
+
+
+
+
+
+#Time pressure was taken accross
 torDiff = loops-nrec
+
 
 # Average pressure across time 
 leftWall *= h / torDiff
@@ -227,6 +272,7 @@ plt.show()
 plt.xlabel("Vertical height y")
 plt.ylabel("Pressure")
 plt.plot(yMids, rightWall, "o", label = "Pressure of right wall against vertical height")
+
 plt.legend(loc = 'upper right')
 plt.show()
 
@@ -236,3 +282,6 @@ plt.plot(yMids,fit2,label = 'fitted function')
 plt.plot(yMids,leftWall+rightWall,'o', label ='pressure across both walls against vertical height')
 plt.legend()
 plt.show()
+print("Mean T =", np.mean(temp_avg))
+print("b (density) =", B)
+print("g/T =", g / np.mean(temp_avg))
