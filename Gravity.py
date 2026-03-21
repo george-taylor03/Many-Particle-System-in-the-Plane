@@ -84,9 +84,6 @@ t_end = 40
 h = 0.01
 loops = int(t_end / h)
 
-# Last number of timesteps to be analysed
-nrec = 3500
-
 low = np.array([0, 0])
 upp = np.array([10, 10]) * math.sqrt(N)
 
