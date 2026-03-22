@@ -3,8 +3,15 @@ import matplotlib.pyplot as plt
 import math
 from SimulationStep import SimulationStep
 from numba import njit
+from scipy.optimize import curve_fit
 
 ran = np.random.rand
+
+def cube(x,a,b,c,d):
+    return a*(x**3) + b*(x**2) + c*(x) + d
+
+def overY(x,a,b):
+    return 1/(a + b*(x))
 
 # Note: Dividing more expensive than multiplying (only matters in large loops) -> get inverse once and multiply with that
 
@@ -47,30 +54,9 @@ def update_quantities(N, n_bins, bin_length_inv, Y, vx, vy, density, temp, v_wal
             else:
                 right_wall[loc] -= v_wall_particle
 
-# Guess for fitting is y = Ae ^ (-by)
-# Returns A and B
-def quantity_function(y_mids, data, quantity_name, quantity_func_name):
-    # Can't take log of 0
-    condition = data > 0
-    y = y_mids[condition]
-    d = data[condition]
-
-    log_data = np.log(data)
-    
-    # Use np.polynomial.fit for a linear approx using a log
-    # Returns form log(data) = log(A) - B * y
-    # https://numpy.org/doc/stable/reference/generated/numpy.polynomial.polynomial.Polynomial.fit.html#numpy.polynomial.polynomial.Polynomial.fit
-    poly = np.polynomial.polynomial.Polynomial.fit(y, log_data, 1).convert()
-
-    A = np.exp(poly.coef[0])
-    B = -poly.coef[1]
-
-    print(f'Estimated {quantity_name}: {quantity_func_name}(y) = {round(A, 4)} * exp(-{round(B, 4)}y)')
-    
-    return A, B
 
 # Number of Particles
-p = 6
+p = 8
 N = 4 ** p
 
 # Particle constant radius and elasticity
@@ -80,7 +66,7 @@ part = {"radius" : 0.2, "spring" : 250}
 g = 0.05
 
 # Timestep
-t_end = 40
+t_end = 100
 h = 0.01
 loops = int(t_end / h)
 
@@ -121,8 +107,8 @@ left_wall = np.zeros(n_bins)
 right_wall = np.zeros(n_bins)
 
 # Times to measure density, temperature and pressure 
-tor_1 = 20
-tor_2 = 40
+tor_1 = 50
+tor_2 = 100
 
 # Used in simulation for times in [tor_1, tor_2]
 tor_1_cond, tor_2_cond = int(tor_1 / h), int(tor_2 / h)
@@ -149,17 +135,22 @@ right_wall_avg = right_wall * h / (tor_diff * bin_length)
 
 ## Fits of quantities ##
 # Density fit
-density_A, density_B = quantity_function(y_mids, density_avg, 'density', 'd')
-density_fit = density_A * np.exp(-density_B * y_mids)
+paramDen,cov = curve_fit(cube,y_mids,density_avg)
+density_fit = cube(y_mids,paramDen[0],paramDen[1],paramDen[2],paramDen[3])
 
-# Temp fit
-temp_A, temp_B = quantity_function(y_mids, temp_avg, 'temperature', 'E')
-temp_fit = temp_A * np.exp(-temp_B * y_mids)
+# # Temp fit
+# temp_A, temp_B = quantity_function(y_mids, temp_avg, 'temperature', 'E')
+# temp_fit = temp_A * np.exp(-temp_B * y_mids)
 
-# Pressure fit
-total_wall = left_wall + right_wall
-pressure_A, pressure_B = quantity_function(y_mids, total_wall, 'pressure', 'P')
-pressure_fit = pressure_A * np.exp(-pressure_B * y_mids)
+# Pressure fit left wall
+pressureLeftParam, cov = curve_fit(overY,y_mids,left_wall_avg)
+pressure_fit_left = overY(y_mids,pressureLeftParam[0],pressureLeftParam[1])
+print(f"Parameters For Left Wall: a = {pressureLeftParam[0]}, b = {pressureLeftParam[0]}")
+
+# Pressure fit right wall
+pressureRightParam, cov = curve_fit(overY,y_mids,right_wall_avg)
+pressure_fit_right = overY(y_mids,pressureRightParam[0],pressureRightParam[1])
+print(f"Parameters For Right Wall: a = {pressureRightParam[0]}, b = {pressureRightParam[0]}")
 
 
 ## Plots of quantities ##
@@ -171,34 +162,27 @@ plt.ylabel('Denstity')
 plt.legend(loc = 'upper right')
 plt.show()
 
-# Temp plot
-plt.plot(y_mids, temp_avg, 'o', label = 'Average temperature at bin')
-plt.plot(y_mids, temp_fit, label = 'Fitted function')
-plt.xlabel('y')
-plt.ylabel('Temperature')
-plt.legend(loc = 'upper right')
-plt.show()
+# # Temp plot
+# plt.plot(y_mids, temp_avg, 'o', label = 'Average temperature at bin')
+# plt.plot(y_mids, temp_fit, label = 'Fitted function')
+# plt.xlabel('y')
+# plt.ylabel('Temperature')
+# plt.legend(loc = 'upper right')
+# plt.show()
 
 # Pressure plot
 # Left wall plot
-plt.plot(y_mids, left_wall, 'o', label = 'Pressure on left wall')
+plt.plot(y_mids, left_wall_avg, 'o', label = 'Pressure on left wall')
+plt.plot(y_mids, pressure_fit_left, label = 'Fitted function')
 plt.xlabel('y')
 plt.ylabel('Pressure')
 plt.legend(loc = 'upper right')
 plt.show()
 
 # Right wall plot
-plt.plot(y_mids, right_wall, 'o', label = 'Pressure on right wall')
+plt.plot(y_mids, right_wall_avg, 'o', label = 'Pressure on right wall')
+plt.plot(y_mids, pressure_fit_right, label = 'Fitted function')
 plt.xlabel('y')
 plt.ylabel('Pressure')
 plt.legend(loc = 'upper right')
-plt.show()
-
-# Both walls plot
-plt.plot(y_mids, total_wall, 'o', label = 'Pressure on both walls')
-plt.plot(y_mids, pressure_fit, label = 'Fitted function')
-plt.xlabel('y')
-plt.ylabel('Pressure')
-plt.legend(loc = 'upper right')
-plt.legend()
 plt.show()
