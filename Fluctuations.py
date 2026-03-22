@@ -1,36 +1,35 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import SimulationStep as sim
 import math
-import time
+from SimulationStep import SimulationStep
 
 rand = np.random.rand
 
 # Average temperature
 def AvgTemp(v):
-    return np.sum(v * v)/(2 * v.shape[1])
+    return np.sum(v * v) / (2 * v.shape[1])
     
 # Standard deviation of temperature for the last nrec timesteps
 def sigma(T):
-    return np.std(T[-nrec - 1:])
+    return np.std(T[-nrec:])
 
 # Set up conditions to run the different experiments for T2
-# Change to true or false depending on which you want to run (to stop unneeded waiting)
+# Change to true or false depending on which you want to run
 # Can all be true at once 
 
 # For part a 
-partA = True
+partA = False
 # For temperature graphs at each value of p (part a)
-TemperatureGraph = False
+temperatureGraph = False
 
 # For part b
-partB = True
+partB = False
 
 # For part c 
 partC = True 
 
 # Number of Particles
-p = 8
+p = 4
 N = 4 ** p
 
 # Maximum p value to be run for part b
@@ -43,12 +42,12 @@ part = {"radius" : 0.2, "spring" : 250}
 g = 0
 
 # Timestep (starts at t = 0)
-tend = 20
+tend = 10
 h = 0.01
 loops = int(tend / h)
 
 # Last number of timesteps to be analysed
-nrec = 1000
+nrec = 500
 
 low = np.array([0, 0])
 upp = np.array([10, 10]) * math.sqrt(N)
@@ -67,14 +66,6 @@ v = 2 * (rand(2, N) - 0.5) * vini
 
 """" loglog for part a """
 if partA:
-    # Number of updates on time estimation
-    #NTimeUpdates = 200
-    # Constant factor for how much longer the next p will take to compute (5 is roughly correct)
-    # Becomes more accurate for p>6 ish
-    # Cfactor = 5
-    # Which timesteps to update time estimation
-    #Update = np.arange(1, (loops), int(loops/NTimeUpdates))
-
     # Average temperatures
     T = np.zeros(loops)
     # Standard deviations
@@ -104,42 +95,20 @@ if partA:
         # Inital Velocity
         vini = 2.5
         v = 2 * (rand(2, N) - 0.5) * vini
-
-        # Reseting time estimation using guesses from last p value
-        #TimeLeft =  round(Cfactor*TimeTaken,2)
-        #CurrentFinishTime = time.strftime("%H:%M:%S", time.localtime(time.time() + TimeLeft))
-
-        # Start timing for p value
-        #StartTime = time.perf_counter()
         
         for i in range(loops):
-            x, v = sim.SimulationStep(x, v, h, part, box, g)[0 : 2]
+            x, v = SimulationStep(x, v, h, part, box, g)[0 : 2]
             
             T[i] = AvgTemp(v)
-
-            # Time estimation
-            #if i in Update:
-            #    CurrentTime = time.perf_counter()
-            #    TimeLeft = (CurrentTime - StartTime) * ((loops) - 1 - i) / i
-            #    CurrentFinishTime = time.strftime("%H:%M:%S", time.localtime(time.time() + TimeLeft))
-            #    print(f"\r Time Left: {round(TimeLeft,2)}, finishing at: {CurrentFinishTime}", end="", flush=True)
         
         S[p - 1] = sigma(T)
-
-        # Finishing timing
-        #EndTime = time.perf_counter()
-        #TimeTaken = EndTime - StartTime
-        # Time to finish all p values to pmax
-        #TotalTime = TimeTaken * sum(Cfactor**n for n in range(1, pmax-p+1))
-        #FinishTime = time.strftime("%H:%M:%S", time.localtime(time.time() + TotalTime))
         
-        #print(f"p / N = {p} / {4**p} out of pmax = {pmax}. Time taken to compute = {round(TimeTaken,2)}. Aprrox next time to compute = {round(Cfactor*TimeTaken,2)} finishing at {FinishTime}")
-        
-        Temp = T[-nrec - 1:] # Note: Come up with better variable name
-        print(f"Over the last {nrec} timesteps, average temperature = {Temp.mean()} and range as a fraction of the average = {(Temp.max() - Temp.min()) / Temp.mean()}\n")
+        nrecTemp = T[-nrec:]
+        nrecTempMean = nrecTemp.mean()
+        print(f"Over the last {nrec} timesteps, average temperature = {nrecTempMean} and range as a fraction of the average = {(nrecTemp.max() - nrecTemp.min()) / nrecTempMean}\n")
         
         # Temperature graphs for each p
-        if TemperatureGraph:
+        if temperatureGraph:
             plt.plot(np.arange(0, loops, 1), T, label = 4 ** p)
             plt.xlabel('Timestep')
             plt.ylabel('Temperature')
@@ -156,9 +125,10 @@ if partA:
 """ histogram for part b """
 if partB:
     for i in range(loops):
-        x, v = sim.SimulationStep(x, v, h, part, box, g)[0 : 2]
+        x, v = SimulationStep(x, v, h, part, box, g)[0 : 2]
 
     speed = np.sqrt(np.sum(v ** 2, 0))
+    
     # number of bins not sure what final value will be 
     Bins = 30
     plt.hist(speed, bins = Bins, density = True, edgecolor = 'k')
@@ -167,12 +137,12 @@ if partB:
     plt.show()
 
 
-""" mean free parth for part c """
+""" mean free path for part c """
 if partC:
     # Total distance travelled for each particle
-    distance = np.zeros((2, N))
+    distance = np.zeros(N)
 
-    # Particles that collided with walls in previous time step
+    # Particles that collided with walls in previous time step (True = colliding)
     old_wall_collision_particles = np.zeros(N, np.bool_)
 
     # Pairs of particles that collided in previous time step
@@ -182,7 +152,7 @@ if partC:
     particle_collision_count = np.ones(N)
     
     for i in range(loops):
-        x, v, _, distance_step, new_wall_collision_particles, new_particle_collision_particles = sim.SimulationStep(x, v, h, part, box, g)
+        x, v, _, distance_step, new_wall_collision_particles, new_particle_collision_particles, _ = SimulationStep(x, v, h, part, box, g)
 
         distance += distance_step
 
