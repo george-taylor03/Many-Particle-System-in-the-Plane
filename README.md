@@ -52,7 +52,7 @@ pip install -r requirements.txt
 > ```bash
 > pip install -r requirements.txt
 > ```
-> See above
+> [See above](https://github.com/george-taylor03/Many-Particle-System-in-the-Plane?tab=readme-ov-file#cloning-from-git)
 
 However the required libraries can be installed individually
 ```bash
@@ -105,4 +105,21 @@ Run using:
 python ./Fluctuations.py
 ```
 ### `runCompression.py`
+
+This file is for Task 3 (T3)
+
+Shows the compression animation live
+
+> [!CAUTION]
+> The animation takes a couple of minutes to run
+
+Prints:
+- Initial average pressure
+- Compressed average pressure
+- Compressed average temperature
+
+Plots temperature over time for the predetermined time frame
+
+Plots average pressure over time for the same predetermined time frame
+
 ### `Gravity.py`
