@@ -137,7 +137,7 @@ for i in range(loops):
 plt.show()
 
 # Initial Pressure
-print(f"Inital Average Pressure {np.average(pInit / tor1_loopNum)}")
+print(f"Initial Average Pressure {np.average(pInit / tor1_loopNum)}")
 
 # Compressed average pressure
 print(f"Compressed Average Pressure {np.average(pBox)}")
