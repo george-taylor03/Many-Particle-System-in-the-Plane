@@ -143,7 +143,22 @@ def calculate_forces(N, radius, spring, g, cell_length, length, X, Y, cell_index
     return forces, v_walls, forces_walls, wall_collision_particles
 
 # Returns single time step
-def SimulationStep(x, v, dt, part, box, g):
+def SimulationStep(x:np.ndarray, v:np.ndarray, h:float, part:dict, box:np.ndarray, g:float) -> tuple[np.ndarray,np.ndarray]:
+    """
+    Preforms one single step forward in time
+
+    Args:
+        h (float): Time step size
+        x (2xN array): Current particle positions (first row are horizontal coordinates, second row are vertical coordinates)
+        v (2xN array): Current particle velocities (first row are horizontal coordinates, second row are vertical coordinates)
+        part (dictionary['radius','spring']): Stores properties of the particle (radius r of all particles and spring constant of all particles)
+        box (2x2 array): Array storing the corners of the box (np.vstack([low,upp]))
+        g (float): Single number, the amount g of gravity
+        h (float): Lower bound.
+
+    Returns:
+        tuple: xnew(2xN array), vnew(2xN array) which are the updated position and velocity
+    """
     # N
     N = len(x[0])
     
