@@ -155,6 +155,6 @@ plt.show()
 # Average pressure plot of all walls between tor3 and tor4
 plt.xlabel("Time")
 plt.ylabel("Pressure")
-plt.plot(pressTimes, pBox, label = f"Pressure over time for wall apeed a = {a}")
+plt.plot(pressTimes, pBox, label = f"Pressure over time for wall speed a = {a}")
 plt.legend()
 plt.show()
