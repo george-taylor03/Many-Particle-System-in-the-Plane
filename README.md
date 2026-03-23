@@ -122,4 +122,16 @@ Plots temperature over time for the predetermined time frame
 
 Plots average pressure over time for the same predetermined time frame
 
+Run using:
+```bash
+python ./runCompression.py
+```
+
 ### `Gravity.py`
+
+Does xyz
+
+Run using:
+```bash
+python ./Gravity.py
+```
