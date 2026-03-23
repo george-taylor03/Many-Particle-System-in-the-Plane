@@ -4,12 +4,13 @@ import math
 from SimulationStep import SimulationStep
 from matplotlib.patches import Rectangle
 
-np.random.seed(1)
 ran = np.random.rand    
     
 # Number of Particles
 p = 7
 N = 4 ** p
+
+sqrt_N = math.sqrt(N)
 
 # Particle constant radius and elasticity
 part = {"radius" : 0.2, "spring" : 250}
@@ -23,7 +24,7 @@ h = 0.01
 loops = int(t_end / h)
 
 low = np.array([0, 0])
-upp = np.array([10, 10]) * math.sqrt(N)
+upp = np.array([10, 10]) * sqrt_N
 
 # Box Dimensions
 box = np.vstack([low, upp])
@@ -41,7 +42,7 @@ a = 50
 
 # Settled Time tor
 tor1 = 5
-tor2 = tor1 + (5 * math.sqrt(N)) / a
+tor2 = tor1 + (5 * sqrt_N) / a
 
 tor1_loopNum, tor2_loopNum = int(tor1 / h), int(tor2 / h)
 
@@ -56,11 +57,11 @@ torTimes = np.arange(tor1, tor2, h)
 # Recorded times of temperature
 tempTimes = np.arange(tor3, tor4, h)
 
+# list of temperatures during tor3 and tor4
+T = []
+
 # Recorded times of pressure
 pressTimes = []
-
-# List of temperatures during tor3 and tor4
-T = []
 
 # Array of pressure per wall initially before compression
 pInit = np.zeros(4)
@@ -90,7 +91,7 @@ for i in range(loops):
         loc = i - tor1_loopNum
 
         # Updating box
-        box[1, 1] = 10 * math.sqrt(N) - a * (torTimes[loc] - tor1)
+        box[1, 1] = 10 * sqrt_N - a * (torTimes[loc] - tor1)
     
     # Run Simulation
     x, v, forceW, *_ = SimulationStep(x, v, h, part, box, g)
@@ -133,6 +134,8 @@ for i in range(loops):
     scatter.set_offsets(np.c_[x[0], x[1]])
     plt.pause(0.01)
 
+plt.show()
+
 # Initial Pressure
 print(f"Inital Average Pressure {np.average(pInit / tor1_loopNum)}")
 
@@ -145,13 +148,13 @@ print(f"Average Compressed Temperature {np.average(T)}")
 # Temperature plot of box between tor3 and tor4
 plt.xlabel("Time")
 plt.ylabel("Temperature")
-plt.plot(tempTimes, T, label = f"Temperature over Time for Wall Speed a = {a}")
+plt.plot(tempTimes, T, label = f"Temperature over time for wall speed a = {a}")
 plt.legend()
 plt.show()
 
 # Average pressure plot of all walls between tor3 and tor4
 plt.xlabel("Time")
 plt.ylabel("Pressure")
-plt.plot(pressTimes, pBox, label = f"Pressure over Time for Wall Speed a = {a}")
+plt.plot(pressTimes, pBox, label = f"Pressure over time for wall apeed a = {a}")
 plt.legend()
 plt.show()
