@@ -6,11 +6,11 @@ from SimulationStep import SimulationStep
 rand = np.random.rand
 
 # Average temperature
-def AvgTemp(v):
-    return np.sum(v * v) / (2 * v.shape[1])
+def AvgTemp(N, v):
+    return np.sum(v * v) / (2 * N)
     
 # Standard deviation of temperature for the last nrec timesteps
-def sigma(T):
+def sigma(nrec, T):
     return np.std(T[-nrec:])
 
 # Set up conditions to run the different experiments for T2
@@ -23,13 +23,13 @@ partA = False
 temperatureGraph = False
 
 # For part b
-partB = False
+partB = True
 
 # For part c 
-partC = True 
+partC = False
 
 # Number of Particles
-p = 4
+p = 8
 N = 4 ** p
 
 # Maximum p value to be run for part b
@@ -85,7 +85,7 @@ if partA:
         low = np.array([0, 0])
         upp = np.array([10, 10]) * math.sqrt(N)
     
-        #Box Dimensions
+        # Box Dimensions
         box = np.vstack([low, upp])
         
         # Initial position
@@ -99,9 +99,9 @@ if partA:
         for i in range(loops):
             x, v = SimulationStep(x, v, h, part, box, g)[0 : 2]
             
-            T[i] = AvgTemp(v)
+            T[i] = AvgTemp(N, v)
         
-        S[p - 1] = sigma(T)
+        S[p - 1] = sigma(T, nrec)
         
         nrecTemp = T[-nrec:]
         nrecTempMean = nrecTemp.mean()
@@ -127,9 +127,10 @@ if partB:
     for i in range(loops):
         x, v = SimulationStep(x, v, h, part, box, g)[0 : 2]
 
-    speed = np.sqrt(np.sum(v ** 2, 0))
-    
-    # number of bins not sure what final value will be 
+        
+    speed = np.sqrt(np.sum(v * v, 0))
+
+    # Histogram plot
     Bins = 30
     plt.hist(speed, bins = Bins, density = True, edgecolor = 'k')
     plt.ylabel('Number of particles')
@@ -154,25 +155,27 @@ if partC:
     for i in range(loops):
         x, v, _, distance_step, new_wall_collision_particles, new_particle_collision_particles, _ = SimulationStep(x, v, h, part, box, g)
 
-        distance += distance_step
+        # Only measure after settling from random initial condition
+        if nrec - 1 < i:
+            distance += distance_step
 
-        # Adds 1 to particle's collision count if particle is in the new collision list but not in the old list
-        # Sets old collision lists to new after counting
+            # Adds 1 to particle's collision count if particle is in the new collision list but not in the old list
+            # Sets old collision lists to new after counting
         
-        # Wall collisions
-        for particle in range(N):
-            if new_wall_collision_particles[particle] and not old_wall_collision_particles[particle]:
-                particle_collision_count[particle] += 1
+            # Wall collisions
+            for particle in range(N):
+                if new_wall_collision_particles[particle] and not old_wall_collision_particles[particle]:
+                    particle_collision_count[particle] += 1
         
-        old_wall_collision_particles = new_wall_collision_particles
+            old_wall_collision_particles = new_wall_collision_particles
 
-        # Particle collisions
-        if new_particle_collision_particles:
-            for particle, neighbour in new_particle_collision_particles - old_particle_collision_particles:
-                particle_collision_count[particle] += 1
-                particle_collision_count[neighbour] += 1
+            # Particle collisions
+            if new_particle_collision_particles:
+                for particle, neighbour in new_particle_collision_particles - old_particle_collision_particles:
+                    particle_collision_count[particle] += 1
+                    particle_collision_count[neighbour] += 1
 
-            old_particle_collision_particles = new_particle_collision_particles
+                old_particle_collision_particles = new_particle_collision_particles
     
     # Overall mean free path
     print(f'Overall mean free path: {np.average(distance / particle_collision_count)}')
