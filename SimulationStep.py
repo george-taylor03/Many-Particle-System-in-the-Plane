@@ -4,8 +4,6 @@ from numba import njit, prange, int64, set_num_threads, get_num_threads, get_thr
 from numba.typed import List, Dict
 from numba.core import types
 
-# Numba: User manual - https://numba.readthedocs.io/en/stable/user/index.html
-
 set_num_threads(4)
 
 # Tuple type for cell's index and indexes of 2 colliding particles
