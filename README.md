@@ -76,9 +76,9 @@ For Task 4 see `Gravity.py`
 Contains the function SimulationStep that preforms one single step forward in time.
 
 - Args:
-    - dt (float): Time step size
     - x (2xN array): Current particle positions (first row are horizontal coordinates, second row are vertical coordinates)
     - v (2xN array): Current particle velocities (first row are horizontal coordinates, second row are vertical coordinates)
+    - dt (float): Time step size
     - part (dictionary['radius','spring']): Stores properties of the particle (radius r of all particles and spring constant of all particles)
     - box (2x2 array): Array storing the corners of the box (np.vstack([low,upp]))
     - g (float): Single number, the amount g of gravity
@@ -89,7 +89,7 @@ Contains the function SimulationStep that preforms one single step forward in ti
         - vnew(2xN array): updated velocity
         - forces_walls(length 4 array): Force exerted on each wall at that moment in the order [left, right, bottom, top]
         - distance(length N array): Distance travelled by each particle during the timestep
-        - wall_collision_particles(length N array): Of boolean variables where True shows a particle is in range of a collision with a wall
+        - wall_collision_particles(length N array): True if particle is currently colliding with a wall
         - particle_collision_particles(set of variable length): Each element is a tuple which holds the index of the particle and its colliding particle. Only pairs of colliding particles appear in the set
         - v_walls(length N array); The individual horizontal wall force experienced by each particle
 
