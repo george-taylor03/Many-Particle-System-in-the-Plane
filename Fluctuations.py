@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import math
 from SimulationStep import SimulationStep
 
+#np.random.seed(1)
 rand = np.random.rand
 
 # Average temperature
@@ -18,15 +19,15 @@ def sigma(nrec, T):
 # Can all be true at once 
 
 # For part a 
-partA = False
+partA = True
 # For temperature graphs at each value of p (part a)
-temperatureGraph = False
+temperatureGraph = True
 
 # For part b
 partB = True
 
 # For part c 
-partC = False
+partC = True
 
 # Number of Particles
 p = 8
@@ -42,7 +43,7 @@ part = {"radius" : 0.2, "spring" : 250}
 g = 0
 
 # Timestep (starts at t = 0)
-tend = 10
+tend = 20
 h = 0.01
 loops = int(tend / h)
 
@@ -101,7 +102,7 @@ if partA:
             
             T[i] = AvgTemp(N, v)
         
-        S[p - 1] = sigma(T, nrec)
+        S[p - 1] = sigma(nrec, T)
         
         nrecTemp = T[-nrec:]
         nrecTempMean = nrecTemp.mean()
@@ -110,15 +111,20 @@ if partA:
         # Temperature graphs for each p
         if temperatureGraph:
             plt.plot(np.arange(0, loops, 1), T, label = 4 ** p)
-            plt.xlabel('Timestep')
-            plt.ylabel('Temperature')
-            plt.legend(loc = 'lower left')
+            plt.title(f'Temperature for N = 4 ^ {p}', fontsize = 30)
+            plt.xlabel('Timestep', fontsize = 25)
+            plt.ylabel('Temperature', fontsize = 25)
+            plt.xticks(fontsize = 25)
+            plt.yticks(fontsize = 25)
             plt.show()
 
     # Plotting N versus standard deviation on a loglog scale
     plt.loglog(Nplot, S, 'o-' )
-    plt.xlabel('Number of particles')
-    plt.ylabel('Standard deviation')
+    plt.title('Number of particles against standard deviation', fontsize = 30)
+    plt.xlabel('Number of particles', fontsize = 25)
+    plt.ylabel('Standard deviation', fontsize = 25)
+    plt.xticks(fontsize = 25)
+    plt.yticks(fontsize = 25)
     plt.show()
 
 
@@ -126,15 +132,17 @@ if partA:
 if partB:
     for i in range(loops):
         x, v = SimulationStep(x, v, h, part, box, g)[0 : 2]
-
         
     speed = np.sqrt(np.sum(v * v, 0))
 
     # Histogram plot
     Bins = 30
     plt.hist(speed, bins = Bins, density = True, edgecolor = 'k')
-    plt.ylabel('Number of particles')
-    plt.xlabel('Final speed value')
+    plt.title('Average speed against number of particles', fontsize = 30)
+    plt.ylabel('Number of particles', fontsize = 25)
+    plt.xlabel('Final speed value', fontsize = 25)
+    plt.xticks(fontsize = 25)
+    plt.yticks(fontsize = 25)
     plt.show()
 
 
@@ -176,6 +184,9 @@ if partC:
                     particle_collision_count[neighbour] += 1
 
                 old_particle_collision_particles = new_particle_collision_particles
+    
+    # Overall mean free path
+    print(f'Overall mean free path: {np.average(distance / particle_collision_count)}')
     
     # Overall mean free path
     print(f'Overall mean free path: {np.average(distance / particle_collision_count)}')
