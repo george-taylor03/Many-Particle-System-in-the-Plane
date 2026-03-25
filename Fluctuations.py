@@ -21,7 +21,7 @@ def sigma(nrec, T):
 # For part a 
 partA = True
 # For temperature graphs at each value of p (part a)
-temperatureGraph = True
+temperatureGraph = False
 
 # For part b
 partB = True
@@ -106,8 +106,7 @@ if partA:
         
         nrecTemp = T[-nrec:]
         nrecTempMean = nrecTemp.mean()
-        print(f"Over the last {nrec} timesteps, average temperature = {nrecTempMean} and range as a fraction of the average = {(nrecTemp.max() - nrecTemp.min()) / nrecTempMean}\n")
-        
+       
         # Temperature graphs for each p
         if temperatureGraph:
             plt.plot(np.arange(0, loops, 1), T, label = 4 ** p)
@@ -119,10 +118,10 @@ if partA:
             plt.show()
 
     # Plotting N versus standard deviation on a loglog scale
-    plt.loglog(Nplot, S, 'o-' )
+    plt.loglog(S, Nplot, 'o-' )
     plt.title('Number of particles against standard deviation', fontsize = 30)
-    plt.xlabel('Number of particles', fontsize = 25)
-    plt.ylabel('Standard deviation', fontsize = 25)
+    plt.xlabel('Standard deviation', fontsize = 25)
+    plt.ylabel('Number of particles', fontsize = 25)
     plt.xticks(fontsize = 25)
     plt.yticks(fontsize = 25)
     plt.show()
@@ -184,9 +183,6 @@ if partC:
                     particle_collision_count[neighbour] += 1
 
                 old_particle_collision_particles = new_particle_collision_particles
-    
-    # Overall mean free path
-    print(f'Overall mean free path: {np.average(distance / particle_collision_count)}')
     
     # Overall mean free path
     print(f'Overall mean free path: {np.average(distance / particle_collision_count)}')
