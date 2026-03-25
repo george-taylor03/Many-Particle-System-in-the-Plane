@@ -84,7 +84,14 @@ Contains the function SimulationStep that preforms one single step forward in ti
     - g (float): Single number, the amount g of gravity
 
 - Returns:
-    - tuple: xnew(2xN array), vnew(2xN array) which are the updated position and velocity
+    - tuple: 
+        - xnew(2xN array): updated position
+        - vnew(2xN array): updated velocity
+        - forces_walls(length 4 array): Force exerted on each wall at that moment in the order [left, right, bottom, top]
+        - distance(length N array): Distance travelled by each particle during the timestep
+        - wall_collision_particles(length N array): Of boolean variables where True shows a particle is in range of a collision with a wall
+        - particle_collision_particles(set of variable length): Each element is a tuple which holds the index of the particle and its colliding particle. Only pairs of colliding particles appear in the set
+        - v_walls(length N array); The individual horizontal wall force experienced by each particle
 
 > [!IMPORTANT]
 > This file does nothing when run. The function needs to be imported into other files.
