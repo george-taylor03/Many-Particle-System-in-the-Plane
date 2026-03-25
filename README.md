@@ -2,7 +2,7 @@
 This repository is for use with Many-Particle-System-in-the-Plane project and includes all python files used for the simulation and experiments.
 
 The project and all code were contributed by:
-> Benoît Harwood, Isaac Ling, Zorawar Sidhu, George Taylor, Luke Alford
+> Benoît Harwood, Issac Ling, Zorawar Sidhu, George Taylor, Luke Alford
 
 ## Dependencies
 |Package|Purpose|Installation|
@@ -129,7 +129,13 @@ python ./runCompression.py
 
 ### `Gravity.py`
 
-Does xyz
+This file is for Task 4 (T4)
+
+#### It shows 4 graphs in total:
+- A plot of density against y level
+- A plot of temperature against y level
+- A plot of pressure on the **left** wall against y level
+- A plot of pressure on the **right** wall against y level
 
 Run using:
 ```bash
