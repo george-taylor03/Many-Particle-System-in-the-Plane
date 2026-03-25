@@ -4,6 +4,7 @@ import math
 from SimulationStep import SimulationStep
 from matplotlib.patches import Rectangle
 
+#np.random.seed(1)
 ran = np.random.rand    
     
 # Number of Particles
@@ -38,7 +39,7 @@ v_ini = 2.5
 v = 2 * (ran(2, N) - 0.5) * v_ini
 
 # Wall speed
-a = 50
+a = 30
 
 # Settled Time tor
 tor1 = 5
@@ -137,24 +138,28 @@ for i in range(loops):
 plt.show()
 
 # Initial Pressure
-print(f"Initial Average Pressure {np.average(pInit / tor1_loopNum)}")
+print(f"Inital average pressure: {np.average(pInit / tor1_loopNum)}")
 
 # Compressed average pressure
-print(f"Compressed Average Pressure {np.average(pBox)}")
+print(f"Compressed average pressure: {np.average(pBox)}")
 
 # Average temperature over tor3 and tor4
-print(f"Average Compressed Temperature {np.average(T)}")
+print(f"Compressed average temperature: {np.average(T)}")
 
 # Temperature plot of box between tor3 and tor4
-plt.xlabel("Time")
-plt.ylabel("Temperature")
-plt.plot(tempTimes, T, label = f"Temperature over time for wall speed a = {a}")
-plt.legend()
+plt.plot(tempTimes, T)
+plt.title(f"Temperature over time for wall speed a = {a}", fontsize = 30)
+plt.xlabel("Time", fontsize = 25)
+plt.ylabel("Temperature", fontsize = 25)
+plt.xticks(fontsize = 25)
+plt.yticks(fontsize = 25)
 plt.show()
 
 # Average pressure plot of all walls between tor3 and tor4
-plt.xlabel("Time")
-plt.ylabel("Pressure")
-plt.plot(pressTimes, pBox, label = f"Pressure over time for wall speed a = {a}")
-plt.legend()
+plt.plot(pressTimes, pBox)
+plt.title(f"Pressure over time for wall speed a = {a}", fontsize = 30)
+plt.xlabel("Time", fontsize = 25)
+plt.ylabel("Pressure", fontsize = 25)
+plt.xticks(fontsize = 25)
+plt.yticks(fontsize = 25)
 plt.show()
