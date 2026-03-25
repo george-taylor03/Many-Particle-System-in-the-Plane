@@ -5,15 +5,8 @@ from SimulationStep import SimulationStep
 from numba import njit
 from scipy.optimize import curve_fit
 
-np.random.seed(1) # Use consistent seed in plots + results in overleaf for repeatable results
+#np.random.seed(1)
 ran = np.random.rand
-
-# Notes:
-    # Add coeff printing
-    # np.polyfit currently degree of 5, can be lower -> higher = more accuracy, but 5 should probably be max degree. 3 is fine
-    # For large t_end's (like 100, where tor1 = 20 and tor2 = 100) Ae^-By might be a better fit for pressure? -> add an additional 'pressure against Ae^-By' plot at the end as well just to test
-        # - Use quantity_function from older versions for Ae^-By
-        # - If choosing to keep tor1 = 20 and tor2 = 40 then 1 / (a + by) probably better
 
 # Updates quantity arrays
 @njit
@@ -51,10 +44,29 @@ def update_quantities(N, n_bins, bin_length_inv, Y, vx, vy, density, temp, v_wal
                 else:
                     right_wall[loc] -= v_wall_particle
 
-# Pressure dependence guess
+# Guess - f(y) = 1 / (a + by)
 @njit
-def pressure_guess(y, a, b):
+def quantity_guess_frac(y, a, b):
     return 1 / (a + b * y)
+
+# Guess - f(y) = Ae ^ (-By)
+def quantity_guess_exp(y_mids, data):
+    # Can't take log of 0
+    condition = data > 0
+    y = y_mids[condition]
+    d = data[condition]
+
+    log_data = np.log(d)
+
+    # Use np.polynomial.fit for a linear approx using a log
+    # Returns form log(data) = log(A) - B * y
+    # https://numpy.org/doc/stable/reference/generated/numpy.polynomial.polynomial.Polynomial.fit.html#numpy.polynomial.polynomial.Polynomial.fit
+    poly = np.polynomial.polynomial.Polynomial.fit(y, log_data, 1).convert()
+
+    A = np.exp(poly.coef[0])
+    B = -poly.coef[1]
+
+    return A, B
 
 # Number of Particles
 p = 8
@@ -136,51 +148,92 @@ right_wall_avg = right_wall * h / (tor_diff * bin_length)
 
 ## Fits of quantities ##
 # Density fit
-density_coeff = np.polyfit(y_mids, density_avg, 5)
-density_fit = np.poly1d(density_coeff)
+# d(y) = 5th deg polynomial
+density_poly_coeff = np.polyfit(y_mids, density_avg, 5)
+density_poly_fit = np.poly1d(density_poly_coeff)
+print(f'd(y) = polynomial, coefficients: {density_poly_coeff}')
+
+# d(y) = Ae ^ (-By)
+density_exp_A, density_exp_B = quantity_guess_exp(y_mids, density_avg)
+density_exp_fit = density_exp_A * np.exp(-density_exp_B * y_mids)
+print(f'For d(y) = Ae ^ (-By) on left wall, A = {density_exp_A} and B = {density_exp_B}\n')
 
 # Temperature fit
-temp_coeff = np.polyfit(y_mids, temp_avg, 5)
-temp_fit = np.poly1d(temp_coeff)
+# E(y) = 5th deg polynomial
+temp_poly_coeff = np.polyfit(y_mids, temp_avg, 5)
+temp_poly_fit = np.poly1d(temp_poly_coeff)
+print(f'E(y) coefficients: {temp_poly_coeff}')
+
+# d(y) = Ae ^ (-By)
+temp_exp_A, temp_exp_B = quantity_guess_exp(y_mids, temp_avg)
+temp_exp_fit = temp_exp_A * np.exp(-temp_exp_B * y_mids)
+print(f'For E(y) = Ae ^ (-By) on left wall, A = {temp_exp_A} and B = {temp_exp_B}\n\n')
 
 # Pressure fit
-pressure_left_param, _ = curve_fit(pressure_guess, y_mids, left_wall_avg)
-pressure_left_fit = pressure_guess(y_mids, pressure_left_param[0], pressure_left_param[1])
+# P(y) = 1 / (a + by)
+pressure_left_param_frac, _ = curve_fit(quantity_guess_frac, y_mids, left_wall_avg)
+pressure_left_fit_frac = quantity_guess_frac(y_mids, pressure_left_param_frac[0], pressure_left_param_frac[1])
+print(f'For P(y) = 1 / (a + by) on left wall, a = {pressure_left_param_frac[0]} and b = {pressure_left_param_frac[1]}')
 
-pressure_right_param, _ = curve_fit(pressure_guess, y_mids, right_wall_avg)
-pressure_right_fit = pressure_guess(y_mids, pressure_right_param[0], pressure_right_param[1])
+pressure_right_param_frac, _ = curve_fit(quantity_guess_frac, y_mids, right_wall_avg)
+pressure_right_fit_frac = quantity_guess_frac(y_mids, pressure_right_param_frac[0], pressure_right_param_frac[1])
+print(f'For P(y) = 1 / (a + by) on right wall, a = {pressure_right_param_frac[0]} and b = {pressure_right_param_frac[1]}\n')
 
+# P(y) = Ae ^ (-By)
+pressure_left_param_exp_A, pressure_left_param_exp_B = quantity_guess_exp(y_mids, left_wall_avg)
+pressure_left_fit_exp = pressure_left_param_exp_A * np.exp(-pressure_left_param_exp_B * y_mids)
+print(f'For P(y) = Ae ^ (-By) on left wall, A = {pressure_left_param_exp_A} and B = {pressure_left_param_exp_B}')
+
+pressure_right_param_exp_A, pressure_right_param_exp_B = quantity_guess_exp(y_mids, right_wall_avg)
+pressure_right_fit_exp = pressure_right_param_exp_A * np.exp(-pressure_right_param_exp_B * y_mids)
+print(f'For P(y) = Ae ^ (-By) on right wall, A = {pressure_right_param_exp_A} and B = {pressure_right_param_exp_B}')
 
 ## Plots of quantities ##
 # Density plot
 plt.plot(y_mids, density_avg, 'o', label = 'Average denstity at bin')
-plt.plot(y_mids, density_fit(y_mids), label = 'Fitted function')
-plt.xlabel('y')
-plt.ylabel('Denstity')
-plt.legend(loc = 'upper right')
+plt.plot(y_mids, density_poly_fit(y_mids), label = 'Fitted function, d(y) = 5th deg polynomial')
+plt.plot(y_mids, density_exp_fit, label = 'Fitted function, d(y) = Ae ^ (-By)')
+plt.title(f"Density against y", fontsize = 30)
+plt.xlabel('y', fontsize = 25)
+plt.ylabel('Denstity', fontsize = 25)
+plt.xticks(fontsize = 25)
+plt.yticks(fontsize = 25)
+plt.legend(loc = 'upper right', fontsize = 25)
 plt.show()
 
 # Temperature plot
 plt.plot(y_mids, temp_avg, 'o', label = 'Average temperature at bin')
-plt.plot(y_mids, temp_fit(y_mids), label = 'Fitted function')
-plt.xlabel('y')
-plt.ylabel('Temperature')
-plt.legend(loc = 'upper right')
+plt.plot(y_mids, temp_poly_fit(y_mids), label = 'Fitted function, d(y) = 5th deg polynomial')
+plt.plot(y_mids, temp_exp_fit, label = 'Fitted function, E(y) = Ae ^ (-By)')
+plt.title(f"Temperature against y", fontsize = 30)
+plt.xlabel('y', fontsize = 25)
+plt.ylabel('Temperature', fontsize = 25)
+plt.xticks(fontsize = 25)
+plt.yticks(fontsize = 25)
+plt.legend(loc = 'lower left', fontsize = 25)
 plt.show()
 
 # Pressure plots
 # Left wall plot
-plt.plot(y_mids, left_wall_avg, 'o', label = 'Pressure on left wall')
-plt.plot(y_mids, pressure_left_fit, label = 'Fitted function')
-plt.xlabel('y')
-plt.ylabel('Pressure')
-plt.legend(loc = 'upper right')
+plt.plot(y_mids, left_wall_avg, 'o', label = 'Average left wall pressure at bin')
+plt.plot(y_mids, pressure_left_fit_frac, label = 'Fitted function, P(y) = 1 / (a + by)')
+plt.plot(y_mids, pressure_left_fit_exp, label = 'Fitted function, P(y) = Ae ^ (-By)')
+plt.title(f"Pressure of left wall against y", fontsize = 30)
+plt.xlabel('y', fontsize = 25)
+plt.ylabel('Pressure', fontsize = 25)
+plt.xticks(fontsize = 25)
+plt.yticks(fontsize = 25)
+plt.legend(loc = 'upper right', fontsize = 25)
 plt.show()
 
 # Right wall plot
-plt.plot(y_mids, right_wall_avg, 'o', label = 'Pressure on right wall')
-plt.plot(y_mids, pressure_right_fit, label = 'Fitted function')
-plt.xlabel('y')
-plt.ylabel('Pressure')
-plt.legend(loc = 'upper right')
+plt.plot(y_mids, right_wall_avg, 'o', label = 'Average right wall pressure at bin')
+plt.plot(y_mids, pressure_right_fit_frac, label = 'Fitted function, P(y) = 1 / (a + by)')
+plt.plot(y_mids, pressure_right_fit_exp, label = 'Fitted function, P(y) = Ae ^ (-By)')
+plt.title(f"Pressure of right wall against y", fontsize = 30)
+plt.xlabel('y', fontsize = 25)
+plt.ylabel('Pressure', fontsize = 25)
+plt.xticks(fontsize = 25)
+plt.yticks(fontsize = 25)
+plt.legend(loc = 'upper right', fontsize = 25)
 plt.show()
